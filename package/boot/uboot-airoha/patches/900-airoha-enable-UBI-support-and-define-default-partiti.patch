@@ -11,6 +11,8 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
  configs/an7583_evb_defconfig    | 16 ++++++++++++++++
  4 files changed, 70 insertions(+)
 
+diff --git a/arch/arm/dts/an7581-u-boot.dtsi b/arch/arm/dts/an7581-u-boot.dtsi
+index a9297ca6503..1960b8ca300 100644
 --- a/arch/arm/dts/an7581-u-boot.dtsi
 +++ b/arch/arm/dts/an7581-u-boot.dtsi
 @@ -76,6 +76,22 @@
@@ -36,6 +38,8 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
  			};
  		};
  
+diff --git a/arch/arm/dts/an7583-evb.dts b/arch/arm/dts/an7583-evb.dts
+index d02cd194e8a..096dd395c90 100644
 --- a/arch/arm/dts/an7583-evb.dts
 +++ b/arch/arm/dts/an7583-evb.dts
 @@ -46,6 +46,28 @@
@@ -67,30 +71,10 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
  &pcie0 {
  	pinctrl-names = "default";
  	pinctrl-0 = <&pcie0_rst_pins>;
+diff --git a/configs/an7581_evb_defconfig b/configs/an7581_evb_defconfig
+index c74247e13db..6006bebd04d 100644
 --- a/configs/an7581_evb_defconfig
 +++ b/configs/an7581_evb_defconfig
-@@ -77,3 +77,19 @@ CONFIG_SPI=y
- CONFIG_DM_SPI=y
- CONFIG_AIROHA_SNFI_SPI=y
- CONFIG_SHA512=y
-+CONFIG_CMD_UBI=y
-+# CONFIG_CMD_UBI_RENAME is not set
-+CONFIG_CMD_UBIFS=y
-+CONFIG_ENV_IS_IN_UBI=y
-+CONFIG_ENV_UBI_PART="ubi"
-+CONFIG_ENV_UBI_VOLUME="ubootenv"
-+CONFIG_ENV_UBI_VOLUME_REDUND="ubootenv2"
-+CONFIG_ENV_UBI_VID_OFFSET=0
-+CONFIG_MTD_UBI=y
-+CONFIG_MTD_UBI_MODULE=y
-+CONFIG_MTD_UBI_WL_THRESHOLD=4096
-+CONFIG_MTD_UBI_BEB_LIMIT=20
-+# CONFIG_MTD_UBI_FASTMAP is not set
-+CONFIG_UBI_BLOCK=y
-+# CONFIG_UBIFS_SILENCE_MSG is not set
-+# CONFIG_UBIFS_SILENCE_DEBUG_DUMP is not set
---- a/configs/an7583_evb_defconfig
-+++ b/configs/an7583_evb_defconfig
 @@ -79,3 +79,19 @@ CONFIG_SHA512=y
  CONFIG_AIROHA_ETH=y
  CONFIG_MMC_MTK=y
@@ -111,3 +95,30 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
 +CONFIG_UBI_BLOCK=y
 +# CONFIG_UBIFS_SILENCE_MSG is not set
 +# CONFIG_UBIFS_SILENCE_DEBUG_DUMP is not set
+diff --git a/configs/an7583_evb_defconfig b/configs/an7583_evb_defconfig
+index 89b4e180015..8577f53a9c7 100644
+--- a/configs/an7583_evb_defconfig
++++ b/configs/an7583_evb_defconfig
+@@ -81,3 +81,19 @@ CONFIG_SHA512=y
+ CONFIG_AIROHA_ETH=y
+ CONFIG_MMC_MTK=y
+ CONFIG_AIROHA_SNFI_SPI=y
++CONFIG_CMD_UBI=y
++# CONFIG_CMD_UBI_RENAME is not set
++CONFIG_CMD_UBIFS=y
++CONFIG_ENV_IS_IN_UBI=y
++CONFIG_ENV_UBI_PART="ubi"
++CONFIG_ENV_UBI_VOLUME="ubootenv"
++CONFIG_ENV_UBI_VOLUME_REDUND="ubootenv2"
++CONFIG_ENV_UBI_VID_OFFSET=0
++CONFIG_MTD_UBI=y
++CONFIG_MTD_UBI_MODULE=y
++CONFIG_MTD_UBI_WL_THRESHOLD=4096
++CONFIG_MTD_UBI_BEB_LIMIT=20
++# CONFIG_MTD_UBI_FASTMAP is not set
++CONFIG_UBI_BLOCK=y
++# CONFIG_UBIFS_SILENCE_MSG is not set
++# CONFIG_UBIFS_SILENCE_DEBUG_DUMP is not set
+-- 
+2.48.1
+
