@@ -555,15 +555,16 @@
 			      <0x0 0x1fa86000 0x0 0x300>,
 			      <0x0 0x1fa8a000 0x0 0x1000>,
 			      <0x0 0x1fa8b000 0x0 0x1000>;
-			reg-names = "xfi_mac", "hsgmii_an", "hsgmii_pcs",
+			reg-names = "pcs_mac", "hsgmii_an", "hsgmii_pcs",
 				    "multi_sgmii", "usxgmii",
-				    "hsgmii_rate_adp", "xfi_ana", "xfi_pma";
+				    "hsgmii_rate_adp", "pcs_ana", "pcs_pma";
 
 			resets = <&scuclk EN7581_XPON_MAC_RST>,
 				 <&scuclk EN7581_XPON_PHY_RST>;
 			reset-names = "mac", "phy";
 
 			airoha,scu = <&scuclk>;
+			#pcs-cells = <0>;
 		};
 
 		eth_pcs: pcs@1fa09000 {
@@ -576,15 +577,69 @@
 			      <0x0 0x1fa76000 0x0 0x300>,
 			      <0x0 0x1fa7a000 0x0 0x1000>,
 			      <0x0 0x1fa7b000 0x0 0x1000>;
-			reg-names = "xfi_mac", "hsgmii_an", "hsgmii_pcs",
+			reg-names = "pcs_mac", "hsgmii_an", "hsgmii_pcs",
 				    "multi_sgmii", "usxgmii",
-				    "hsgmii_rate_adp", "xfi_ana", "xfi_pma";
+				    "hsgmii_rate_adp", "pcs_ana", "pcs_pma";
 
-			resets = <&scuclk EN7581_XSI_MAC_RST>,
-				 <&scuclk EN7581_XSI_PHY_RST>;
-			reset-names = "mac", "phy";
+			// resets = <&scuclk EN7581_XSI_MAC_RST>,
+			// 	 <&scuclk EN7581_XSI_PHY_RST>;
+			// reset-names = "mac", "phy";
 
 			airoha,scu = <&scuclk>;
+			#pcs-cells = <0>;
+		};
+
+		pcie_pcs: pcs@1fa04000 {
+			compatible = "airoha,an7581-pcs-pcie";
+			reg = <0x0 0x1fa04000 0x0 0x1000>,
+			      <0x0 0x1fa50000 0x0 0x60>,
+			      <0x0 0x1fa50a00 0x0 0x164>,
+			      <0x0 0x1fa54000 0x0 0x450>,
+			      <0x0 0x1fa55900 0x0 0x338>,
+			      <0x0 0x1fa56000 0x0 0x300>,
+			      <0x0 0x1fa05000 0x0 0x1000>,
+			      <0x0 0x1fa60000 0x0 0x60>,
+			      <0x0 0x1fa60a00 0x0 0x164>,
+			      <0x0 0x1fa64000 0x0 0x450>,
+			      <0x0 0x1fa65900 0x0 0x338>,
+			      <0x0 0x1fa66000 0x0 0x300>,
+			      <0x0 0x1fa5a000 0x0 0x1000>,
+			      <0x0 0x1fa5b000 0x0 0x1000>,
+			      <0x0 0x1fa5c000 0x0 0x1000>;
+			reg-names = "pcs_mac0", "hsgmii_an0", "hsgmii_pcs0",
+				    "multi_sgmii0", "usxgmii0",
+				    "hsgmii_rate_adp0",
+				    "pcs_mac1", "hsgmii_an1", "hsgmii_pcs1",
+				    "multi_sgmii1", "usxgmii1",
+				    "hsgmii_rate_adp1",
+				    "pcs_ana", "pcs_pma0", "pcs_pma1";
+
+			// resets = <&scuclk EN7581_XSI_MAC_RST>,
+			// 	 <&scuclk EN7581_XSI_PHY_RST>;
+			// reset-names = "mac", "phy";
+
+			airoha,scu = <&scuclk>;
+			#pcs-cells = <1>;
+		};
+
+		usb_pcs: pcs@1fa07000 {
+			compatible = "airoha,an7581-pcs-usb";
+			reg = <0x0 0x1fa07000 0x0 0x1000>,
+			      <0x0 0x1fa90000 0x0 0x60>,
+			      <0x0 0x1fa90a00 0x0 0x164>,
+			      <0x0 0x1fa94000 0x0 0x450>,
+			      <0x0 0x1fa96000 0x0 0x300>,
+			      <0x0 0x1fa9a000 0x0 0x600>;
+			reg-names = "pcs_mac", "hsgmii_an", "hsgmii_pcs",
+				    "multi_sgmii",
+				    "hsgmii_rate_adp","pcs_ana";
+
+			// resets = <&scuclk EN7581_XSI_MAC_RST>,
+			// 	 <&scuclk EN7581_XSI_PHY_RST>;
+			// reset-names = "mac", "phy";
+
+			airoha,scu = <&scuclk>;
+			#pcs-cells = <0>;
 		};
 
 		chip_scu: syscon@1fa20000 {
@@ -631,6 +686,8 @@
 			airoha,serdes-port = <AIROHA_SCU_SERDES_USB1>;
 
 			#phy-cells = <1>;
+
+			status = "disabled";
 		};
 
 		usb1: usb@1fad0000 {
@@ -654,6 +711,8 @@
 			airoha,serdes-port = <AIROHA_SCU_SERDES_USB2>;
 
 			#phy-cells = <1>;
+
+			status = "disabled";
 		};
 
 		crypto@1e004000 {
@@ -783,6 +842,8 @@
 				    "p0-xr-dtime", "p1-xr-dtime",
 				    "rx-aeq";
 			#phy-cells = <0>;
+
+			status = "disabled";
 		};
 
 		pcie0: pcie@1fc00000 {
@@ -1000,12 +1061,53 @@
 				status = "disabled";
 			};
 
-			gdm4: ethernet@4 {
+			mac3: ethernet@3 {
+				compatible = "airoha,eth-mac";
+				reg = <3>;
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				gdm3_pcie0: ethernet-port@4 {
+					compatible = "airoha,eth-port";
+					reg = <4>;
+					pcs-handle = <&pcie_pcs 0>;
+
+					status = "disabled";
+				};
+
+				gdm3_pcie1: ethernet-port@5 {
+					compatible = "airoha,eth-port";
+					reg = <5>;
+					pcs-handle = <&pcie_pcs 1>;
+
+					status = "disabled";
+				};
+			};
+
+			mac4: ethernet@4 {
 				compatible = "airoha,eth-mac";
 				reg = <4>;
-				pcs = <&eth_pcs>;
 
-				status = "disabled";
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+
+				gdm4: ethernet-port@0 {
+					compatible = "airoha,eth-port";
+					reg = <0>;
+					pcs-handle = <&eth_pcs>;
+
+					status = "disabled";
+				};
+
+				gdm4_usb: ethernet-port@1 {
+					compatible = "airoha,eth-port";
+					reg = <1>;
+					pcs = <&usb_pcs>;
+
+					status = "disabled";
+				};
 			};
 		};
 
