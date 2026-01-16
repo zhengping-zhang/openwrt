@@ -76,9 +76,9 @@ index c74247e13db..6006bebd04d 100644
 --- a/configs/an7581_evb_defconfig
 +++ b/configs/an7581_evb_defconfig
 @@ -79,3 +79,19 @@ CONFIG_SHA512=y
- CONFIG_AIROHA_ETH=y
- CONFIG_MMC_MTK=y
+ CONFIG_DM_SPI=y
  CONFIG_AIROHA_SNFI_SPI=y
+ CONFIG_SHA512=y
 +CONFIG_CMD_UBI=y
 +# CONFIG_CMD_UBI_RENAME is not set
 +CONFIG_CMD_UBIFS=y

@@ -56,7 +56,7 @@ index dc5eb3af19c..1076b6149ce 100644
  obj-$(CONFIG_FSL_IIM) += fsl_iim.o
  obj-$(CONFIG_FSL_SEC_MON) += fsl_sec_mon.o
 +obj-$(CONFIG_FW_LOADER) += fw_loader.o
- obj-$(CONFIG_$(XPL_)FS_LOADER) += fs_loader.o
+ obj-$(CONFIG_$(PHASE_)FS_LOADER) += fs_loader.o
  obj-$(CONFIG_GATEWORKS_SC) += gsc.o
  obj-$(CONFIG_GDSYS_IOEP) += gdsys_ioep.o
 diff --git a/drivers/misc/fs_loader.c b/drivers/misc/fs_loader.c
