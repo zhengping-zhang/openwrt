@@ -1842,10 +1842,10 @@ index 000000000000..93f09153d299
 +#define   AIROHA_PCS_ANA_TX_DMEDGEGEN_EN	BIT(24)
 +#define   AIROHA_PCS_ANA_TX_CKLDO_EN		BIT(0)
 +#define AIROHA_PCS_ANA_PXP_RX_BUSBIT_SEL	0xcc
-+#define    AIROHA_PCS_ANA_RX_PHY_CK_SEL_FORCE	BIT(24)
-+#define    AIROHA_PCS_ANA_RX_PHY_CK_SEL		BIT(16)
-+#define      AIROHA_PCS_ANA_RX_PHY_CK_SEL_FROM_PR 0x0
-+#define      AIROHA_PCS_ANA_RX_PHY_CK_SEL_FROM_DES 0x1
++#define   AIROHA_PCS_ANA_RX_PHY_CK_SEL_FORCE	BIT(24)
++#define   AIROHA_PCS_ANA_RX_PHY_CK_SEL		BIT(16)
++#define     AIROHA_PCS_ANA_RX_PHY_CK_SEL_FROM_PR 0x0
++#define     AIROHA_PCS_ANA_RX_PHY_CK_SEL_FROM_DES 0x1
 +#define AIROHA_PCS_ANA_PXP_RX_REV_0		0xd4
 +#define   AIROHA_PCS_ANA_RX_REV_1		GENMASK(31, 16)
 +#define     AIROHA_PCS_ANA_REV_1_FE_EQ_BIAS_CTRL GENMASK(30, 28)
@@ -2125,8 +2125,8 @@ index 000000000000..93f09153d299
 +#define AIROHA_PCS_ANA_PXP_2L_RX0_BUSBIT_SEL	0xf4
 +#define   AIROHA_PCS_ANA_2L_RX0_PHY_CK_SEL_FORCE BIT(24)
 +#define   AIROHA_PCS_ANA_2L_RX0_PHY_CK_SEL	BIT(16)
-+#define      AIROHA_PCS_ANA_2L_RX0_PHY_CK_SEL_FROM_PR 0x0
-+#define      AIROHA_PCS_ANA_2L_RX0_PHY_CK_SEL_FROM_DES 0x1
++#define     AIROHA_PCS_ANA_2L_RX0_PHY_CK_SEL_FROM_PR 0x0
++#define     AIROHA_PCS_ANA_2L_RX0_PHY_CK_SEL_FROM_DES 0x1
 +#define AIROHA_PCS_ANA_PXP_2L_RX0_REV_0		0xfc
 +#define   AIROHA_PCS_ANA_2L_RX0_REV_1		GENMASK(31, 16)
 +#define     AIROHA_PCS_ANA_2L_REV_1_FE_EQ_BIAS_CTRL GENMASK(30, 28)
@@ -2657,7 +2657,7 @@ index 000000000000..93f09153d299
 +}
 +
 +
-+static inline int an7581_pcs_rxlock_workaround(struct airoha_pcs_priv *priv
++static inline int an7581_pcs_rxlock_workaround(struct airoha_pcs_priv *priv,
 +					       int index)
 +{
 +	return 0;
