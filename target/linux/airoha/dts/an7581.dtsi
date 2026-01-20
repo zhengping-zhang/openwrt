@@ -1049,6 +1049,7 @@
 				compatible = "airoha,eth-mac";
 				reg = <1>;
 				phy-mode = "internal";
+
 				status = "disabled";
 
 				fixed-link {
@@ -1061,7 +1062,7 @@
 			gdm2: ethernet@2 {
 				compatible = "airoha,eth-mac";
 				reg = <2>;
-				pcs = <&pon_pcs>;
+				pcs-handle = <&pon_pcs>;
 
 				status = "disabled";
 			};
@@ -1097,7 +1098,6 @@
 				#address-cells = <1>;
 				#size-cells = <0>;
 
-
 				gdm4: ethernet-port@0 {
 					compatible = "airoha,eth-port";
 					reg = <0>;
@@ -1109,7 +1109,7 @@
 				gdm4_usb: ethernet-port@1 {
 					compatible = "airoha,eth-port";
 					reg = <1>;
-					pcs = <&usb_pcs>;
+					pcs-handle = <&usb_pcs>;
 
 					status = "disabled";
 				};
