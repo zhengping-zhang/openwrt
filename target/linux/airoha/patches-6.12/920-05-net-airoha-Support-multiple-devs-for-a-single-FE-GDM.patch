@@ -238,18 +238,22 @@ Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
  	u32 id;
  
  	if (!id_ptr) {
-@@ -3129,7 +3142,33 @@ static int airoha_alloc_gdm_port(struct
+@@ -3129,7 +3142,36 @@ static int airoha_alloc_gdm_port(struct
  	if (err)
  		return err;
  
 -	return airoha_alloc_gdm_device(eth, port, np);
-+	for_each_available_child_of_node(np, node) {
++	for_each_child_of_node(np, node) {
 +		/* Multiple external serdes connected to the FE GDM port via an
 +		 * external arbiter.
 +		 */
 +		const __be32 *nbq_ptr;
 +
 +		if (!of_device_is_compatible(node, "airoha,eth-port"))
++			continue;
++
++		d++;
++		if (!of_device_is_available(node))
 +			continue;
 +
 +		nbq_ptr = of_get_property(node, "reg", NULL);
@@ -266,7 +270,6 @@ Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
 +			of_node_put(node);
 +			return err;
 +		}
-+		d++;
 +	}
 +
 +	return !d ? airoha_alloc_gdm_device(eth, port, 0, np) : 0;
