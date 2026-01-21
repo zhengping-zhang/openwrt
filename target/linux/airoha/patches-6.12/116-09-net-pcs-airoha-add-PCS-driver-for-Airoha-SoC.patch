@@ -85,7 +85,7 @@ new file mode 100644
 index 000000000000..d6e5926ace5c
 --- /dev/null
 +++ b/drivers/net/pcs/airoha/pcs-airoha-common.c
-@@ -0,0 +1,1265 @@
+@@ -0,0 +1,1263 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (c) 2024 AIROHA Inc
@@ -1285,9 +1285,7 @@ index 000000000000..d6e5926ace5c
 +	 * manual rx calibration is needed. This is only limited to
 +	 * any SoC revision before E2.
 +	 */
-+	if (device_is_compatible(dev, "airoha,an7581-pcs-eth") ||
-+	    device_is_compatible(dev, "airoha,an7581-pcs-pon") ||
-+	    device_is_compatible(dev, "airoha,an7581-pcs-pcie")) {
++	if (device_is_compatible(dev, "airoha,an7581-pcs-eth")) {
 +		u32 val;
 +
 +		ret = regmap_read(priv->scu, AIROHA_SCU_PDIDR, &val);
