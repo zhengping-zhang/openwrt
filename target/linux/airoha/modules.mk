@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0-only
 
+SOUND_MENU:=Sound Support
 OTHER_MENU:=Other modules
 
 I2C_MT7621_MODULES:= \
@@ -39,4 +40,37 @@ endef
 
 $(eval $(call KernelPackage,pwm-an7581))
 
+
+define KernelPackage/sound-soc-an7581
+  TITLE:=Airoha AN7581 Audio support
+  KCONFIG:=CONFIG_SND_SOC_AN7581 CONFIG_SND_SOC_AN7581_WM8960
+  FILES:= \
+	$(LINUX_DIR)/sound/soc/mediatek/common/snd-soc-mtk-common.ko \
+	$(LINUX_DIR)/sound/soc/mediatek/an7581/snd-soc-an7581-afe.ko
+  AUTOLOAD:=$(call AutoLoad,56,snd-soc-mtk-common snd-soc-an7581-afe)
+  DEPENDS:=@TARGET_airoha +kmod-sound-soc-core
+  $(call AddDepends/sound)
+endef
+
+define KernelPackage/sound-soc-an7581/description
+ Support for audio on systems using the Airoha AN7581 SoC.
+endef
+
+$(eval $(call KernelPackage,sound-soc-an7581))
+
+
+define KernelPackage/sound-soc-an7581-wm8960
+  TITLE:=Airoha AN7581 Audio support
+  KCONFIG:=CONFIG_SND_SOC_AN7581_WM8960
+  FILES:=$(LINUX_DIR)/sound/soc/mediatek/an7581/an7581-wm8960.ko
+  AUTOLOAD:=$(call AutoLoad,57,an7581-wm8960)
+  DEPENDS:=@TARGET_airoha +kmod-sound-soc-wm8960 +kmod-sound-soc-an7581
+  $(call AddDepends/sound)
+endef
+
+define KernelPackage/sound-soc-an7581-wm8960/description
+ Support for use of the Wolfson Audio WM8960 codec with the Airoha AN7581 SoC.
+endef
+
+$(eval $(call KernelPackage,sound-soc-an7581-wm8960))
 
