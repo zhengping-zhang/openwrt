@@ -113,7 +113,7 @@ index 2098fa6a2f63..b08b6a7b48fe 100644
  }
  
  static int as21xxx_read_link(struct phy_device *phydev, int *bmcr)
-@@ -1078,6 +1132,42 @@ static int as21xxx_match_phy_device(struct phy_device *phydev,
+@@ -1078,6 +1132,41 @@ static int as21xxx_match_phy_device(struct phy_device *phydev,
  	return ret;
  }
  
@@ -137,7 +137,6 @@ index 2098fa6a2f63..b08b6a7b48fe 100644
 +static int as21xxx_config_inband(struct phy_device *phydev,
 +				 unsigned int modes)
 +{
-+	struct as21xxx_priv *priv = phydev->priv;
 +	bool enabled;
 +	int ret;
 +
