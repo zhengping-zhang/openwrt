@@ -213,6 +213,7 @@
  *&gdm2 {
  *	status = "disabled";
  *
+ *	managed = "in-band-status";
  *	phy-handle = <&as21xx_0>;
  *	phy-mode = "usxgmii";
  *};
@@ -221,6 +222,7 @@
 &gdm3 {
 	status = "okay";
 
+	managed = "in-band-status";
 	phy-handle = <&as21xx_1>;
 	phy-mode = "usxgmii";
 };
