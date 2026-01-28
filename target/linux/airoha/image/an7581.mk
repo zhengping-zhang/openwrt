@@ -22,7 +22,7 @@ define Device/airoha_an7581-evb
   $(call Device/FitImageLzma)
   DEVICE_VENDOR := Airoha
   DEVICE_MODEL := AN7581 Evaluation Board (SNAND)
-  DEVICE_PACKAGES := kmod-leds-pwm kmod-i2c-an7581 kmod-pwm-airoha kmod-sound-soc-an7581-wm8960 kmod-input-gpio-keys-polled
+  DEVICE_PACKAGES := kmod-leds-pwm kmod-i2c-an7581 kmod-pwm-airoha kmod-sound-soc-an7581-wm8960 kmod-sound-an7581-pcm kmod-input-gpio-keys-polled
   DEVICE_DTS := an7581-evb
   DEVICE_DTS_CONFIG := config@1
   IMAGE/sysupgrade.bin := append-kernel | pad-to 128k | append-rootfs | pad-rootfs | append-metadata
@@ -43,7 +43,7 @@ define Device/airoha_an7581-evb-emmc
   DEVICE_VENDOR := Airoha
   DEVICE_MODEL := AN7581 Evaluation Board (EMMC)
   DEVICE_DTS := an7581-evb-emmc
-  DEVICE_PACKAGES := kmod-i2c-an7581 kmod-sound-soc-an7581-wm8960
+  DEVICE_PACKAGES := kmod-i2c-an7581 kmod-sound-soc-an7581-wm8960 kmod-sound-an7581-pcm
   ARTIFACT/preloader.bin := an7581-preloader rfb
   ARTIFACT/bl31-uboot.fip := an7581-bl31-uboot rfb
   ARTIFACTS := preloader.bin bl31-uboot.fip
