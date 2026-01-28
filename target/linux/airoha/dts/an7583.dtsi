@@ -4,6 +4,7 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/clock/en7523-clk.h>
 #include <dt-bindings/phy/phy.h>
+#include <dt-bindings/phy/airoha,an7581-usb-phy.h>
 #include <dt-bindings/reset/airoha,an7583-reset.h>
 #include <dt-bindings/leds/common.h>
 #include <dt-bindings/thermal/thermal.h>
@@ -626,6 +627,48 @@
 			status = "disabled";
 		};
 
+		usb0: usb@1fab0000 {
+			compatible = "mediatek,mtk-xhci";
+			reg = <0x0 0x1fab0000 0x0 0x3e00>,
+			      <0x0 0x1fab3e00 0x0 0x100>;
+			reg-names = "mac", "ippc";
+			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+
+			phys = <&usb0_u2 PHY_TYPE_USB2>, <&usb1_u2 PHY_TYPE_USB2>,
+			       <&usb0_u3 PHY_TYPE_USB3>;
+
+			status = "disabled";
+		};
+
+		phy@1fac0000 {
+			compatible = "airoha,an7583-usb-phy";
+			reg = <0x0 0x1fac0000 0x0 0x11ff>,
+			      <0x0 0x1fa6f000 0x0 0xff>,
+			      <0x0 0x1fa6e000 0x0 0x3ff>,
+			      <0x0 0x1fa6a000 0x0 0x8ff>;
+			reg-names = "phy", "ana", "pma", "dig";
+
+			usb0_u2: usb2-phy@0 {
+				reg = <0x0>;
+				airoha,usb2-monitor-clk-sel = <AIROHA_USB2_MONCLK_SEL1>;
+
+				#phy-cells = <1>;
+			};
+
+			usb1_u2: usb2-phy@1000 {
+				reg = <0x1000>;
+				airoha,usb2-monitor-clk-sel = <AIROHA_USB2_MONCLK_SEL2>;
+
+				#phy-cells = <1>;
+			};
+
+			usb0_u3: usb3-phy {
+				airoha,scu = <&scuclk>;
+
+				#phy-cells = <1>;
+			};
+		};
+
 		crypto@1e004000 {
 			compatible = "inside-secure,safexcel-eip93ies";
 			reg = <0x0 0x1fb70000 0x0 0x1000>;
@@ -667,9 +710,9 @@
 			      <0x0 0x1fa86000 0x0 0x300>,
 			      <0x0 0x1fa8f000 0x0 0x1000>,
 			      <0x0 0x1fa8e000 0x0 0x1000>;
-			reg-names = "xfi_mac", "hsgmii_an", "hsgmii_pcs",
+			reg-names = "pcs_mac", "hsgmii_an", "hsgmii_pcs",
 				    "multi_sgmii", "usxgmii",
-				    "hsgmii_rate_adp", "xfi_ana", "xfi_pma";
+				    "hsgmii_rate_adp", "pcs_ana", "pcs_pma";
 
 			resets = <&scuclk AN7583_XPON_MAC_RST>,
 				 <&scuclk AN7583_XPON_PHY_RST>,
@@ -677,6 +720,7 @@
 			reset-names = "mac", "phy", "xfi";
 
 			airoha,scu = <&scuclk>;
+			#pcs-cells = <0>;
 		};
 
 		eth_pcs: pcs@1fa09000 {
@@ -689,15 +733,76 @@
 			      <0x0 0x1fa76000 0x0 0x300>,
 			      <0x0 0x1fa7f000 0x0 0x1000>,
 			      <0x0 0x1fa7e000 0x0 0x1000>;
-			reg-names = "xfi_mac", "hsgmii_an", "hsgmii_pcs",
+			reg-names = "pcs_mac", "hsgmii_an", "hsgmii_pcs",
 				    "multi_sgmii", "usxgmii",
-				    "hsgmii_rate_adp", "xfi_ana", "xfi_pma";
+				    "hsgmii_rate_adp", "pcs_ana", "pcs_pma";
 
 			resets = <&scuclk AN7583_XSI_MAC_RST>,
 				 <&scuclk AN7583_XSI_PHY_RST>;
 			reset-names = "mac", "phy";
 
 			airoha,scu = <&scuclk>;
+			#pcs-cells = <0>;
+		};
+
+		usb_pcs: pcs@1fa05000 {
+			compatible = "airoha,an7583-pcs-usb";
+			reg = <0x0 0x1fa05000 0x0 0x1000>,
+			      <0x0 0x1fa60000 0x0 0x60>,
+			      <0x0 0x1fa60a00 0x0 0x164>,
+			      <0x0 0x1fa64000 0x0 0x1000>,
+			      <0x0 0x1fa66000 0x0 0x300>;
+			reg-names = "pcs_mac", "hsgmii_an", "hsgmii_pcs",
+				    "multi_sgmii", "hsgmii_rate_adp";
+
+			// resets = <&scuclk AN7583_USB_XFI_MAC_RST>,
+			// 	 <&scuclk AN7583_USB_XFI_PHY_RST>;
+			// reset-names = "mac", "phy";
+
+			phys = <&usb0_u3 PHY_TYPE_USB3>;
+
+			#pcs-cells = <0>;
+		};
+
+		phy@1fa5f000 {
+			compatible = "airoha,an7583-pcie-phy";
+			reg = <0x0 0x1fa5f000 0x0 0xff>,
+			      <0x0 0x1fa5e000 0x0 0x3ff>,
+			      <0x0 0x1fa5a000 0x0 0x8ff>;
+			reg-names = "ana", "pma", "dig";
+
+			pcie1_phy: pcie-phy {
+				airoha,scu = <&scuclk>;
+
+				#phy-cells = <1>;
+			};
+		};
+
+		pcie_pcs: pcs@1fa04000 {
+			compatible = "airoha,an7583-pcs-pcie";
+			reg = <0x0 0x1fa04000 0x0 0x1000>,
+			      <0x0 0x1fa50000 0x0 0x60>,
+			      <0x0 0x1fa50a00 0x0 0x164>,
+			      <0x0 0x1fa54000 0x0 0x1000>,
+			      <0x0 0x1fa56000 0x0 0x300>,
+			      <0x0 0x1fc74000 0x0 0x450>,
+			      <0x0 0x1fc75900 0x0 0x338>,
+			      <0x0 0x1fc76000 0x0 0x300>,
+			      <0x0 0x1fc7f000 0x0 0x1000>,
+			      <0x0 0x1fc7e000 0x0 0x1000>;
+			reg-names = "pcs_mac", "hsgmii_an0", "hsgmii_pcs0",
+				    "multi_sgmii0", "hsgmii_rate_adp0",
+				    "multi_sgmii1", "usxgmii1",
+				    "hsgmii_rate_adp1", "pcs_ana", "pcs_pma";
+
+			// resets = <&scuclk AN7583_USB_XFI_MAC_RST>,
+			// 	 <&scuclk AN7583_USB_XFI_PHY_RST>;
+			// reset-names = "mac", "phy";
+
+			airoha,scu = <&scuclk>;
+			#pcs-cells = <0>;
+
+			status = "disabled";
 		};
 
 		eth: ethernet@1fb50000 {
@@ -754,7 +859,7 @@
 			gdm2: ethernet@2 {
 				compatible = "airoha,eth-mac";
 				reg = <2>;
-				pcs = <&pon_pcs>;
+				pcs-handle = <&pon_pcs>;
 
 				status = "disabled";
 			};
@@ -762,10 +867,33 @@
 			gdm3: ethernet@3 {
 				compatible = "airoha,eth-mac";
 				reg = <3>;
-				pcs = <&eth_pcs>;
-				airoha,gdm-srcport = <0x16>;
+				pcs-handle = <&eth_pcs>;
 
 				status = "disabled";
+			};
+
+			mac4: ethernet@4 {
+				compatible = "airoha,eth-mac";
+				reg = <4>;
+
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				gdm4: ethernet-port@0 {
+					compatible = "airoha,eth-port";
+					reg = <0>;
+					pcs-handle = <&pcie_pcs>;
+
+					status = "disabled";
+				};
+
+				gdm4_usb: ethernet-port@1 {
+					compatible = "airoha,eth-port";
+					reg = <1>;
+					pcs-handle = <&usb_pcs>;
+
+					status = "disabled";
+				};
 			};
 		};
 
