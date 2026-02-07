@@ -1,3 +1,15 @@
+define Build/append-en8811h-firmware
+  $(STAGING_DIR_HOST)/bin/fiptool update  \
+    --blob uuid=$$($(STAGING_DIR_HOST)/bin/uuidgen -n @dns --md5 --name en8811h.bin),file=$(STAGING_DIR_IMAGE)/EthMD32.bin \
+    $(STAGING_DIR_IMAGE)/an7581_$1-bl31-u-boot.fip
+endef
+
+define Build/append-as21x1x-firmware
+  $(STAGING_DIR_HOST)/bin/fiptool update \
+    --blob uuid=$$($(STAGING_DIR_HOST)/bin/uuidgen -n @dns --md5 --name as21xxx.bin),file=$(STAGING_DIR_ROOT)/lib/firmware/as21x1x_fw.bin \
+    $(STAGING_DIR_IMAGE)/an7581_$1-bl31-u-boot.fip
+endef
+
 define Build/an7581-emmc-bl2-bl31-uboot
   head -c $$((0x800)) /dev/zero > $@
   cat $(STAGING_DIR_IMAGE)/an7581_$1-bl2.fip >> $@
@@ -43,9 +55,9 @@ define Device/airoha_an7581-evb-emmc
   DEVICE_VENDOR := Airoha
   DEVICE_MODEL := AN7581 Evaluation Board (EMMC)
   DEVICE_DTS := an7581-evb-emmc
-  DEVICE_PACKAGES := kmod-mt7996-firmware kmod-i2c-an7581 kmod-sound-soc-an7581-wm8960 kmod-sound-an7581-pcm
+  DEVICE_PACKAGES := aeonsemi-as21xxx-firmware airoha-en8811h-firmware kmod-mt7996-firmware kmod-i2c-an7581 kmod-sound-soc-an7581-wm8960 kmod-sound-an7581-pcm
   ARTIFACT/preloader.bin := an7581-preloader rfb
-  ARTIFACT/bl31-uboot.fip := an7581-bl31-uboot rfb
+  ARTIFACT/bl31-uboot.fip := append-as21x1x-firmware rfb | append-en8811h-firmware rfb | an7581-bl31-uboot rfb
   ARTIFACTS := preloader.bin bl31-uboot.fip
 endef
 TARGET_DEVICES += airoha_an7581-evb-emmc
