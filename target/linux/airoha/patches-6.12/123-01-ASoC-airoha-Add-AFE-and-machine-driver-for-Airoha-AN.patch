@@ -1,4 +1,4 @@
-From 62e2a17c0802787e7d806bcb8be2cee2ba04f9bb Mon Sep 17 00:00:00 2001
+From eb11ddab5e39b79f6d5c11caf04419c8df157495 Mon Sep 17 00:00:00 2001
 From: Christian Marangi <ansuelsmth@gmail.com>
 Date: Thu, 31 Jul 2025 15:32:32 +0200
 Subject: [PATCH] ASoC: airoha: Add AFE and machine driver for Airoha AN7581
@@ -15,10 +15,10 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
  sound/soc/mediatek/Makefile                   |   1 +
  sound/soc/mediatek/an7581/Makefile            |   9 +
  sound/soc/mediatek/an7581/an7581-afe-common.h |  39 ++
- sound/soc/mediatek/an7581/an7581-afe-pcm.c    | 507 ++++++++++++++++++
- sound/soc/mediatek/an7581/an7581-dai-etdm.c   | 407 ++++++++++++++
- sound/soc/mediatek/an7581/an7581-reg.h        |  88 +++
- sound/soc/mediatek/an7581/an7581-wm8960.c     | 170 ++++++
+ sound/soc/mediatek/an7581/an7581-afe-pcm.c    | 516 ++++++++++++++++++
+ sound/soc/mediatek/an7581/an7581-dai-etdm.c   | 411 ++++++++++++++
+ sound/soc/mediatek/an7581/an7581-reg.h        |  89 +++
+ sound/soc/mediatek/an7581/an7581-wm8960.c     | 156 ++++++
  9 files changed, 1249 insertions(+)
  create mode 100644 sound/soc/mediatek/an7581/Makefile
  create mode 100644 sound/soc/mediatek/an7581/an7581-afe-common.h
@@ -150,10 +150,10 @@ index 000000000000..fef1a7b4529e
 +#endif
 diff --git a/sound/soc/mediatek/an7581/an7581-afe-pcm.c b/sound/soc/mediatek/an7581/an7581-afe-pcm.c
 new file mode 100644
-index 000000000000..b1c7164141b9
+index 000000000000..c387fb525d00
 --- /dev/null
 +++ b/sound/soc/mediatek/an7581/an7581-afe-pcm.c
-@@ -0,0 +1,507 @@
+@@ -0,0 +1,516 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Airoha ALSA SoC AFE platform driver for AN7581
@@ -430,16 +430,24 @@ index 000000000000..b1c7164141b9
 +
 +	regmap_read(afe->regmap, AFE_IRQ_STS, &status);
 +
-+	if (status & AFE_IRQ_STS_RECORD)
-+		reg = AFE_IRQ1_CON0;
++	if (status & AFE_IRQ_STS_PLAY)
++		irq = &afe->irqs[AN7581_IRQ_0];
 +	else
-+		reg = AFE_IRQ_CON0;
++		irq = &afe->irqs[AN7581_IRQ_1];
 +
-+	regmap_set_bits(afe->regmap, reg, BIT(2));
-+	regmap_clear_bits(afe->regmap, reg, BIT(2));
++	regmap_set_bits(irq->irq_data->regmap,
++			irq->irq_data->irq_clr_reg,
++			BIT(AFE_IRQ_CLR_SHIFT));
++	regmap_clear_bits(irq->irq_data->regmap,
++			  irq->irq_data->irq_clr_reg,
++			  BIT(AFE_IRQ_CLR_SHIFT));
 +
-+	regmap_set_bits(afe->regmap, reg, BIT(3));
-+	regmap_clear_bits(afe->regmap, reg, BIT(3));
++	regmap_set_bits(irq->irq_data->regmap,
++			irq->irq_data->irq_clr_reg,
++			BIT(AFE_IRQ_MISS_FLG_CLR_SHIFT));
++	regmap_clear_bits(irq->irq_data->regmap,
++			irq->irq_data->irq_clr_reg,
++			BIT(AFE_IRQ_MISS_FLG_CLR_SHIFT));
 +
 +	for (i = 0; i < AN7581_MEMIF_NUM; i++) {
 +		struct mtk_base_afe_memif *memif = &afe->memif[i];
@@ -452,7 +460,7 @@ index 000000000000..b1c7164141b9
 +
 +		irq = &afe->irqs[memif->irq_usage];
 +
-+		if (status & (1 << irq->irq_data->irq_clr_shift))
++		if (status & BIT(irq->irq_data->id))
 +			snd_pcm_period_elapsed(memif->substream);
 +	}
 +
@@ -549,6 +557,7 @@ index 000000000000..b1c7164141b9
 +	if (IS_ERR(afe->regmap))
 +		return PTR_ERR(afe->regmap);
 +
++	irq_data[AN7581_IRQ_0].regmap = afe->regmap;
 +	irq_data[AN7581_IRQ_1].regmap = devm_regmap_init_mmio(&pdev->dev, base,
 +							      &an7581_afe_regmap_config);
 +	if (IS_ERR(irq_data[AN7581_IRQ_1].regmap))
@@ -663,10 +672,10 @@ index 000000000000..b1c7164141b9
 +MODULE_LICENSE("GPL");
 diff --git a/sound/soc/mediatek/an7581/an7581-dai-etdm.c b/sound/soc/mediatek/an7581/an7581-dai-etdm.c
 new file mode 100644
-index 000000000000..a312898fd932
+index 000000000000..751aac1f7fed
 --- /dev/null
 +++ b/sound/soc/mediatek/an7581/an7581-dai-etdm.c
-@@ -0,0 +1,407 @@
+@@ -0,0 +1,411 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Airoha ALSA SoC Audio DAI eTDM Control
@@ -924,18 +933,22 @@ index 000000000000..a312898fd932
 +				struct snd_soc_dai *dai)
 +{
 +	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
++	u32 reg;
++
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		reg = ETDM_OUT1_CON0;
++	else
++		reg = ETDM_IN1_CON0;
 +
 +	dev_dbg(afe->dev, "%s(), cmd %d, dai id %d\n", __func__, cmd, dai->id);
 +	switch (cmd) {
 +	case SNDRV_PCM_TRIGGER_START:
 +	case SNDRV_PCM_TRIGGER_RESUME:
-+		regmap_set_bits(afe->regmap, ETDM_IN1_CON0, ETDM_EN);
-+		regmap_set_bits(afe->regmap, ETDM_OUT1_CON0, ETDM_EN);
++		regmap_set_bits(afe->regmap, reg, ETDM_EN);
 +		break;
 +	case SNDRV_PCM_TRIGGER_STOP:
 +	case SNDRV_PCM_TRIGGER_SUSPEND:
-+		regmap_clear_bits(afe->regmap, ETDM_IN1_CON0, ETDM_EN);
-+		regmap_clear_bits(afe->regmap, ETDM_OUT1_CON0, ETDM_EN);
++		regmap_clear_bits(afe->regmap, reg, ETDM_EN);
 +		break;
 +	default:
 +		break;
@@ -1037,14 +1050,14 @@ index 000000000000..a312898fd932
 +		.capture = {
 +			.stream_name = "ETDM Capture",
 +			.channels_min = 1,
-+			.channels_max = 2,
++			.channels_max = 8,
 +			.rates = SNDRV_PCM_RATE_8000_192000,
 +			.formats = MTK_ETDM_FORMATS,
 +		},
 +		.playback = {
 +			.stream_name = "ETDM Playback",
 +			.channels_min = 1,
-+			.channels_max = 2,
++			.channels_max = 8,
 +			.rates = SNDRV_PCM_RATE_8000_192000,
 +			.formats = MTK_ETDM_FORMATS,
 +		},
@@ -1076,10 +1089,10 @@ index 000000000000..a312898fd932
 +}
 diff --git a/sound/soc/mediatek/an7581/an7581-reg.h b/sound/soc/mediatek/an7581/an7581-reg.h
 new file mode 100644
-index 000000000000..7e22db66e4c2
+index 000000000000..73c1a9373733
 --- /dev/null
 +++ b/sound/soc/mediatek/an7581/an7581-reg.h
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,89 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
 + * an7581-reg.h  --  Airoha AN7581 audio driver reg definition
@@ -1152,8 +1165,9 @@ index 000000000000..7e22db66e4c2
 +#define   AFE_MSB_SHIFT			6
 +
 +#define AFE_IRQ_CON0			0xe4
++#define   AFE_IRQ_MISS_FLG_CLR_SHIFT	3
++#define   AFE_IRQ_CLR_SHIFT		2
 +#define   AFE_IRQ_ON_SHIFT		0
-+#define   AFE_IRQ_CLR_SHIFT		1
 +#define AFE_IRQ_CNT			0xe8
 +#define   AFE_IRQ_CNT_SHIFT		0
 +#define   AFE_IRQ_CNT_MASK		GENMASK(31, 0)
@@ -1162,18 +1176,18 @@ index 000000000000..7e22db66e4c2
 +#define  AFE_IRQ_STS_PLAY		BIT(1)
 +#define  AFE_IRQ_STS_RECORD		BIT(0)
 +
-+#define AFE_IRQ1_CON0			0x100
-+#define AFE_IRQ1_CNT			0x104
++#define AFE_IRQ1_CON0			0x0
++#define AFE_IRQ1_CNT			0x4
 +
 +#define AFE_MAX_REGISTER		AFE_IRQ1_CON0
 +
 +#endif
 diff --git a/sound/soc/mediatek/an7581/an7581-wm8960.c b/sound/soc/mediatek/an7581/an7581-wm8960.c
 new file mode 100644
-index 000000000000..5d6c736aa6f2
+index 000000000000..f0e77e3528d4
 --- /dev/null
 +++ b/sound/soc/mediatek/an7581/an7581-wm8960.c
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,156 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Airoha ALSA SoC I2S platform driver for AN7581
@@ -1184,16 +1198,6 @@ index 000000000000..5d6c736aa6f2
 +#include <sound/soc.h>
 +
 +#include "an7581-afe-common.h"
-+
-+static const struct snd_soc_dapm_widget an7581_wm8960_widgets[] = {
-+	SND_SOC_DAPM_HP("Headphone", NULL),
-+	SND_SOC_DAPM_MIC("AMIC", NULL),
-+};
-+
-+static const struct snd_kcontrol_new an7581_wm8960_controls[] = {
-+	SOC_DAPM_PIN_SWITCH("Headphone"),
-+	SOC_DAPM_PIN_SWITCH("AMIC"),
-+};
 +
 +SND_SOC_DAILINK_DEFS(playback,
 +		     DAILINK_COMP_ARRAY(COMP_CPU("DL1")),
@@ -1217,7 +1221,7 @@ index 000000000000..5d6c736aa6f2
 +		.stream_name = "wm8960-playback",
 +		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
 +			    SND_SOC_DPCM_TRIGGER_POST},
-+		.dynamic = 0,
++		.dynamic = 1,
 +		.playback_only = 1,
 +		SND_SOC_DAILINK_REG(playback),
 +	},
@@ -1226,7 +1230,7 @@ index 000000000000..5d6c736aa6f2
 +		.stream_name = "wm8960-capture",
 +		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
 +			    SND_SOC_DPCM_TRIGGER_POST},
-+		.dynamic = 0,
++		.dynamic = 1,
 +		.capture_only = 1,
 +		SND_SOC_DAILINK_REG(capture),
 +	},
@@ -1247,10 +1251,6 @@ index 000000000000..5d6c736aa6f2
 +	.owner = THIS_MODULE,
 +	.dai_link = an7581_wm8960_dai_links,
 +	.num_links = ARRAY_SIZE(an7581_wm8960_dai_links),
-+	.controls = an7581_wm8960_controls,
-+	.num_controls = ARRAY_SIZE(an7581_wm8960_controls),
-+	.dapm_widgets = an7581_wm8960_widgets,
-+	.num_dapm_widgets = ARRAY_SIZE(an7581_wm8960_widgets),
 +};
 +
 +static int an7581_wm8960_machine_probe(struct platform_device *pdev)
