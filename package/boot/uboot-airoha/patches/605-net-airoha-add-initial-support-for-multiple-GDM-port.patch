@@ -288,7 +288,7 @@ index 4b3653b76ec..0fb050e4b00 100644
 +	 */
 +	dev_or_flags(dev, DM_FLAG_PROBE_AFTER_BIND);
 +
- 	if (!CONFIG_IS_ENABLED(MDIO_MT7531))
+ 	if (!CONFIG_IS_ENABLED(MDIO_MT7531_MMIO))
  		return 0;
  
 @@ -1060,6 +1158,7 @@ static int airoha_eth_bind(struct udevice *dev)
