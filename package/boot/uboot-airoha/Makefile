@@ -14,12 +14,13 @@ include $(INCLUDE_DIR)/host-build.mk
 define U-Boot/Default
   BUILD_TARGET:=airoha
   FIP_COMPRESS:=1
+  HIDDEN:=1
 endef
 
 define U-Boot/an7581_rfb
   NAME:=AN7581 Reference Board
   UBOOT_CONFIG:=an7581_evb
-  BUILD_DEVICES:=airoha_an7581-evb
+  BUILD_DEVICES:=airoha_an7581-evb airoha_an7581-evb-emmc
   BUILD_SUBTARGET:=an7581
   UBOOT_IMAGE:=u-boot.fip
   BL2_IMAGE:=an7581-bl2.bin
