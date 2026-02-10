@@ -659,6 +659,8 @@
 			// 	 <&scuclk EN7581_XSI_PHY_RST>;
 			// reset-names = "mac", "phy";
 
+			phys = <&usb0_phy PHY_TYPE_USB3>;
+
 			airoha,scu = <&scuclk>;
 			#pcs-cells = <0>;
 		};
