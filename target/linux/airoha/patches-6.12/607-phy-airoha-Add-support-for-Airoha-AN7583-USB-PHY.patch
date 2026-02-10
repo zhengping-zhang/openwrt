@@ -23,20 +23,10 @@ diff --git a/drivers/phy/airoha/Kconfig b/drivers/phy/airoha/Kconfig
 index 0675d8f2f9d1..98859d41c4db 100644
 --- a/drivers/phy/airoha/Kconfig
 +++ b/drivers/phy/airoha/Kconfig
-@@ -12,12 +12,22 @@ config PHY_AIROHA_PCIE
- 	  This driver create the basic PHY instance and provides initialize
- 	  callback for PCIe GEN3 port.
- 
--config PHY_AIROHA_USB
--	tristate "Airoha USB PHY Driver"
-+config PHY_AIROHA_AN7581_USB
-+	tristate "Airoha AN7581 USB PHY Driver"
- 	depends on ARCH_AIROHA || COMPILE_TEST
- 	depends on OF
+@@ -12,5 +12,15 @@ config PHY_AIROHA_PCIE
  	select GENERIC_PHY
  	help
--	  Say 'Y' here to add support for Airoha USB PHY driver.
-+	  Say 'Y' here to add support for Airoha AN7581 USB PHY driver.
+ 	  Say 'Y' here to add support for Airoha AN7581 USB PHY driver.
 +	  This driver create the basic PHY instance and provides initialize
 +	  callback for USB port.
 +
@@ -56,19 +46,14 @@ index fd188d08c412..2424bf36872c 100644
 @@ -1,4 +1,5 @@
  
  obj-$(CONFIG_PHY_AIROHA_AN7583_PCIE)	+= phy-airoha-an7583-pcie.o
- obj-$(CONFIG_PHY_AIROHA_EN7581_PCIE)	+= phy-airoha-en7581-pcie.o
--obj-$(CONFIG_PHY_AIROHA_USB)		+= phy-airoha-usb.o
-+obj-$(CONFIG_PHY_AIROHA_AN7581_USB)	+= phy-airoha-an7581-usb.o
-+obj-$(CONFIG_PHY_AIROHA_AN7583_USB)	+= phy-airoha-an7583-usb.o
-diff --git a/drivers/phy/airoha/phy-airoha-usb.c b/drivers/phy/airoha/phy-airoha-an7581-usb.c
-similarity index 100%
-rename from drivers/phy/airoha/phy-airoha-usb.c
-rename to drivers/phy/airoha/phy-airoha-an7581-usb.c
+ obj-$(CONFIG_PHY_AIROHA_AN7581_PCIE)	+= phy-an7581-pcie.o
+ obj-$(CONFIG_PHY_AIROHA_AN7581_USB)	+= phy-an7581-usb.o
++obj-$(CONFIG_PHY_AIROHA_AN7583_USB)	+= phy-an7583-usb.o
 diff --git a/drivers/phy/airoha/phy-airoha-an7583-usb.c b/drivers/phy/airoha/phy-airoha-an7583-usb.c
 new file mode 100644
 index 000000000000..3c948336c871
 --- /dev/null
-+++ b/drivers/phy/airoha/phy-airoha-an7583-usb.c
++++ b/drivers/phy/airoha/phy-an7583-usb.c
 @@ -0,0 +1,2020 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
@@ -409,7 +394,7 @@ index 000000000000..3c948336c871
 +#define AIROHA_USB_PHY_MAX_INSTANCE		3
 +#define AIROHA_PCIE_PHY_MAX_INSTANCE		1
 +
-+struct airoha_usb_phy_instance {
++struct an7583_usb_phy_instance {
 +	struct device_node *node;
 +	u32 type;
 +
@@ -418,7 +403,7 @@ index 000000000000..3c948336c871
 +	struct regmap *scu;
 +};
 +
-+enum airoha_usb_phy_regs {
++enum an7583_usb_phy_regs {
 +	AIROHA_USB_PHY_PHY,
 +	AIROHA_USB_PHY_ANA,
 +	AIROHA_USB_PHY_PMA,
@@ -427,7 +412,7 @@ index 000000000000..3c948336c871
 +	AIROHA_USB_PHY_REGS_MAX,
 +};
 +
-+struct airoha_usb_phy_priv {
++struct an7583_usb_phy_priv {
 +	struct regmap *regs[AIROHA_USB_PHY_REGS_MAX];
 +
 +	unsigned int id;
@@ -435,19 +420,19 @@ index 000000000000..3c948336c871
 +	struct phy *phys[AIROHA_USB_PHY_MAX_INSTANCE];
 +};
 +
-+struct airoha_usb_phy_match_data {
++struct an7583_usb_phy_match_data {
 +	int max_instance;
 +	const char * const *regs_name;
 +	int regs_num;
 +	int (*parse_subnode)(struct device *dev,
-+			    struct airoha_usb_phy_priv *priv,
++			    struct an7583_usb_phy_priv *priv,
 +			    int index, struct device_node *subnode);
 +};
 +
-+static int airoha_usb_phy_u2_slew_rate_calibration(struct phy *phy)
++static int an7583_usb_phy_u2_slew_rate_calibration(struct phy *phy)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev;
 +	u32 fm_out, srctrl;
 +	u32 offset;
@@ -529,7 +514,7 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static bool airoha_usb_phy_u3_kband_is_calibrated(struct airoha_usb_phy_priv *priv)
++static bool an7583_usb_phy_u3_kband_is_calibrated(struct an7583_usb_phy_priv *priv)
 +{
 +	u32 val, res;
 +
@@ -591,10 +576,10 @@ index 000000000000..3c948336c871
 +	return res != 0xfff && res & 0x800;
 +}
 +
-+static int airoha_usb_phy_u2_init(struct phy *phy)
++static int an7583_usb_phy_u2_init(struct phy *phy)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev;
 +	u32 offset;
 +
@@ -630,7 +615,7 @@ index 000000000000..3c948336c871
 +			  AIROHA_USB_PHY_USBPHYACR6 + offset,
 +			  AIROHA_USB_PHY_USB20_BC11_SW_EN);
 +
-+	airoha_usb_phy_u2_slew_rate_calibration(phy);
++	an7583_usb_phy_u2_slew_rate_calibration(phy);
 +
 +	regmap_set_bits(priv->regs[AIROHA_USB_PHY_PHY],
 +			AIROHA_USB_PHY_USBPHYACR6 + offset,
@@ -641,7 +626,7 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_eth_init_sgmii(struct airoha_usb_phy_priv *priv)
++static int an7583_usb_phy_eth_init_sgmii(struct an7583_usb_phy_priv *priv)
 +{
 +	regmap_update_bits(priv->regs[AIROHA_USB_PHY_PMA], AIROHA_USB_PMA_RX_CTRL_27,
 +			   AIROHA_USB_PMA_QP_LINK_ERRO_CNT,
@@ -693,7 +678,7 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_eth_init_hsgmii(struct airoha_usb_phy_priv *priv)
++static int an7583_usb_phy_eth_init_hsgmii(struct an7583_usb_phy_priv *priv)
 +{
 +	regmap_update_bits(priv->regs[AIROHA_USB_PHY_PMA],
 +			   AIROHA_USB_PMA_SS_LCPLL_TDC_PCW_1,
@@ -741,9 +726,9 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_set_mode_eth(struct phy *phy, int submode)
++static int an7583_usb_phy_set_mode_eth(struct phy *phy, int submode)
 +{
-+	struct airoha_usb_phy_priv *priv = dev_get_drvdata(phy->dev.parent);
++	struct an7583_usb_phy_priv *priv = dev_get_drvdata(phy->dev.parent);
 +
 +	/* TODO handle efuse */
 +	regmap_update_bits(priv->regs[AIROHA_USB_PHY_PMA], AIROHA_USB_PMA_INTF_CTRL_8,
@@ -813,9 +798,9 @@ index 000000000000..3c948336c871
 +				   AIROHA_USB_ANA_TX_VLMON_EN));
 +
 +	if (submode == PHY_INTERFACE_MODE_2500BASEX)
-+		airoha_usb_phy_eth_init_hsgmii(priv);
++		an7583_usb_phy_eth_init_hsgmii(priv);
 +	else
-+		airoha_usb_phy_eth_init_sgmii(priv);
++		an7583_usb_phy_eth_init_sgmii(priv);
 +
 +	regmap_clear_bits(priv->regs[AIROHA_USB_PHY_PMA], AIROHA_USB_PMA_SS_LCPLL_TDC_FLT_5,
 +			  AIROHA_USB_PMA_LCPLL_NCPO_CHG);
@@ -862,7 +847,7 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static void airoha_usb_phy_tx_pll_enable(struct airoha_usb_phy_priv *priv)
++static void an7583_usb_phy_tx_pll_enable(struct an7583_usb_phy_priv *priv)
 +{
 +	/* PLL Reset to default */
 +	regmap_clear_bits(priv->regs[AIROHA_USB_PHY_ANA],
@@ -898,7 +883,7 @@ index 000000000000..3c948336c871
 +			  AIROHA_USB_PMA_TX_DATA_EN_FORCE);
 +}
 +
-+static void airoha_usb_phy_kband_calibrate(struct airoha_usb_phy_priv *priv)
++static void an7583_usb_phy_kband_calibrate(struct an7583_usb_phy_priv *priv)
 +{
 +	/* PLL Disable */
 +	regmap_update_bits(priv->regs[AIROHA_USB_PHY_PMA],
@@ -949,9 +934,9 @@ index 000000000000..3c948336c871
 +			AIROHA_USB_PMA_PLL_EN_FORCE);
 +}
 +
-+static int airoha_usb_phy_u3_init(struct phy *phy)
++static int an7583_usb_phy_u3_init(struct phy *phy)
 +{
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev;
 +
 +	dev = phy->dev.parent;
@@ -1185,7 +1170,7 @@ index 000000000000..3c948336c871
 +	regmap_clear_bits(priv->regs[AIROHA_USB_PHY_PMA], AIROHA_USB_PMA_PLL_CK_CTRL_2,
 +			  AIROHA_USB_PMA_PCIE_MODE_PLL_AUTO_EN);
 +
-+	if (!airoha_usb_phy_u3_kband_is_calibrated(priv)) {
++	if (!an7583_usb_phy_u3_kband_is_calibrated(priv)) {
 +		int i;
 +
 +		/* TX Force Disable */
@@ -1201,22 +1186,22 @@ index 000000000000..3c948336c871
 +				AIROHA_USB_PMA_PLL_FORCE_UNSTABLE);
 +
 +		for (i = 0; i < AIROHA_USB_PHY_U3_MAX_CALIB_TRY; i++) {
-+			airoha_usb_phy_kband_calibrate(priv);
++			an7583_usb_phy_kband_calibrate(priv);
 +
 +			/* Exit as soon as we manage to calibrate */
-+			if (airoha_usb_phy_u3_kband_is_calibrated(priv))
++			if (an7583_usb_phy_u3_kband_is_calibrated(priv))
 +				break;
 +		}
 +	}
 +
-+	airoha_usb_phy_tx_pll_enable(priv);
++	an7583_usb_phy_tx_pll_enable(priv);
 +
-+	return !airoha_usb_phy_u3_kband_is_calibrated(priv) ? -EINVAL : 0;
++	return !an7583_usb_phy_u3_kband_is_calibrated(priv) ? -EINVAL : 0;
 +}
 +
-+static int airoha_usb_phy_pcie_init(struct phy *phy)
++static int an7583_usb_phy_pcie_init(struct phy *phy)
 +{
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev;
 +	int i;
 +
@@ -1477,37 +1462,37 @@ index 000000000000..3c948336c871
 +	/* Try to calibrate KBand up to AIROHA_USB_PHY_U3_MAX_CALIB_TRY times */
 +	for (i = 0; i < AIROHA_USB_PHY_U3_MAX_CALIB_TRY; i++) {
 +		/* Check if KBand is calibrated */
-+		if (airoha_usb_phy_u3_kband_is_calibrated(priv))
++		if (an7583_usb_phy_u3_kband_is_calibrated(priv))
 +			break;
 +
 +		/* Trigger KBand calibration */
-+		airoha_usb_phy_kband_calibrate(priv);
++		an7583_usb_phy_kband_calibrate(priv);
 +	}
 +
-+	airoha_usb_phy_tx_pll_enable(priv);
++	an7583_usb_phy_tx_pll_enable(priv);
 +
-+	return !airoha_usb_phy_u3_kband_is_calibrated(priv) ? -EINVAL : 0;
++	return !an7583_usb_phy_u3_kband_is_calibrated(priv) ? -EINVAL : 0;
 +}
 +
-+static int airoha_usb_phy_init(struct phy *phy)
++static int an7583_usb_phy_init(struct phy *phy)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
 +
 +	switch (instance->type) {
 +	case PHY_TYPE_USB2:
-+		airoha_usb_phy_u2_init(phy);
++		an7583_usb_phy_u2_init(phy);
 +		break;
 +	case PHY_TYPE_USB3:
 +		if (phy_get_mode(phy) == PHY_MODE_ETHERNET)
 +			return 0;
 +
-+		airoha_usb_phy_u3_init(phy);
++		an7583_usb_phy_u3_init(phy);
 +		break;
 +	case PHY_TYPE_PCIE:
 +		if (phy_get_mode(phy) == PHY_MODE_ETHERNET)
 +			return 0;
 +
-+		airoha_usb_phy_pcie_init(phy);
++		an7583_usb_phy_pcie_init(phy);
 +		break;
 +	default:
 +		return -EINVAL;
@@ -1516,15 +1501,15 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_exit(struct phy *phy)
++static int an7583_usb_phy_exit(struct phy *phy)
 +{
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_u2_power_on(struct phy *phy)
++static int an7583_usb_phy_u2_power_on(struct phy *phy)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev;
 +	u32 offset;
 +
@@ -1583,9 +1568,9 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_u3_power_on(struct phy *phy)
++static int an7583_usb_phy_u3_power_on(struct phy *phy)
 +{
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev;
 +
 +	dev = phy->dev.parent;
@@ -1617,15 +1602,15 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_power_on(struct phy *phy)
++static int an7583_usb_phy_power_on(struct phy *phy)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
 +
 +	switch (instance->type) {
 +	case PHY_TYPE_USB2:
-+		return airoha_usb_phy_u2_power_on(phy);
++		return an7583_usb_phy_u2_power_on(phy);
 +	case PHY_TYPE_USB3:
-+		return airoha_usb_phy_u3_power_on(phy);
++		return an7583_usb_phy_u3_power_on(phy);
 +	case PHY_TYPE_PCIE:
 +		return 0;
 +	default:
@@ -1633,10 +1618,10 @@ index 000000000000..3c948336c871
 +	}
 +}
 +
-+static int airoha_usb_phy_u2_power_off(struct phy *phy)
++static int an7583_usb_phy_u2_power_off(struct phy *phy)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev;
 +	u32 offset;
 +
@@ -1697,9 +1682,9 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_u3_power_off(struct phy *phy)
++static int an7583_usb_phy_u3_power_off(struct phy *phy)
 +{
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev;
 +
 +	dev = phy->dev.parent;
@@ -1731,15 +1716,15 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_power_off(struct phy *phy)
++static int an7583_usb_phy_power_off(struct phy *phy)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
 +
 +	switch (instance->type) {
 +	case PHY_TYPE_USB2:
-+		return airoha_usb_phy_u2_power_off(phy);
++		return an7583_usb_phy_u2_power_off(phy);
 +	case PHY_TYPE_USB3:
-+		return airoha_usb_phy_u3_power_off(phy);
++		return an7583_usb_phy_u3_power_off(phy);
 +	case PHY_TYPE_PCIE:
 +		return 0;
 +	default:
@@ -1747,9 +1732,9 @@ index 000000000000..3c948336c871
 +	}
 +}
 +
-+static int airoha_usb_phy_u2_set_mode(struct phy *phy, enum phy_mode mode)
++static int an7583_usb_phy_u2_set_mode(struct phy *phy, enum phy_mode mode)
 +{
-+	struct airoha_usb_phy_priv *priv = dev_get_drvdata(phy->dev.parent);
++	struct an7583_usb_phy_priv *priv = dev_get_drvdata(phy->dev.parent);
 +	u32 val = 0;
 +
 +	/*
@@ -1777,10 +1762,10 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_u3_set_mode(struct phy *phy, enum phy_mode mode,
++static int an7583_usb_phy_u3_set_mode(struct phy *phy, enum phy_mode mode,
 +				      int submode)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
 +	u32 sel;
 +
 +	if (mode == PHY_MODE_ETHERNET) {
@@ -1798,15 +1783,15 @@ index 000000000000..3c948336c871
 +			   AIROHA_SCU_SSUSB_HSGMII_SEL, sel);
 +
 +	if (mode == PHY_MODE_ETHERNET)
-+		airoha_usb_phy_set_mode_eth(phy, submode);
++		an7583_usb_phy_set_mode_eth(phy, submode);
 +
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_pcie_set_mode(struct phy *phy, enum phy_mode mode,
++static int an7583_usb_phy_pcie_set_mode(struct phy *phy, enum phy_mode mode,
 +					int submode)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
 +	u32 sel;
 +
 +	if (mode == PHY_MODE_ETHERNET) {
@@ -1824,32 +1809,32 @@ index 000000000000..3c948336c871
 +			   AIROHA_SCU_PCIE_XSI0_SEL, sel);
 +
 +	if (mode == PHY_MODE_ETHERNET)
-+		airoha_usb_phy_set_mode_eth(phy, submode);
++		an7583_usb_phy_set_mode_eth(phy, submode);
 +
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_set_mode(struct phy *phy, enum phy_mode mode, int submode)
++static int an7583_usb_phy_set_mode(struct phy *phy, enum phy_mode mode, int submode)
 +{
-+	struct airoha_usb_phy_instance *instance = phy_get_drvdata(phy);
++	struct an7583_usb_phy_instance *instance = phy_get_drvdata(phy);
 +
 +	switch (instance->type) {
 +	case PHY_TYPE_USB2:
-+		return airoha_usb_phy_u2_set_mode(phy, mode);
++		return an7583_usb_phy_u2_set_mode(phy, mode);
 +	case PHY_TYPE_USB3:
-+		return airoha_usb_phy_u3_set_mode(phy, mode, submode);
++		return an7583_usb_phy_u3_set_mode(phy, mode, submode);
 +	case PHY_TYPE_PCIE:
-+		return airoha_usb_phy_pcie_set_mode(phy, mode, submode);
++		return an7583_usb_phy_pcie_set_mode(phy, mode, submode);
 +	default:
 +		return 0;
 +	}
 +}
 +
-+static struct phy *airoha_usb_phy_xlate(struct device *dev,
++static struct phy *an7583_usb_phy_xlate(struct device *dev,
 +					const struct of_phandle_args *args)
 +{
-+	struct airoha_usb_phy_priv *priv = dev_get_drvdata(dev);
-+	const struct airoha_usb_phy_match_data *data;
++	struct an7583_usb_phy_priv *priv = dev_get_drvdata(dev);
++	const struct an7583_usb_phy_match_data *data;
 +	struct device_node *phy_np = args->np;
 +	struct phy *phy = NULL;
 +	int type, index;
@@ -1887,15 +1872,15 @@ index 000000000000..3c948336c871
 +}
 +
 +static const struct phy_ops airoha_phy = {
-+	.init		= airoha_usb_phy_init,
-+	.exit		= airoha_usb_phy_exit,
-+	.power_on	= airoha_usb_phy_power_on,
-+	.power_off	= airoha_usb_phy_power_off,
-+	.set_mode	= airoha_usb_phy_set_mode,
++	.init		= an7583_usb_phy_init,
++	.exit		= an7583_usb_phy_exit,
++	.power_on	= an7583_usb_phy_power_on,
++	.power_off	= an7583_usb_phy_power_off,
++	.set_mode	= an7583_usb_phy_set_mode,
 +	.owner		= THIS_MODULE,
 +};
 +
-+static const char * const airoha_usb_phy_regs_name[AIROHA_USB_PHY_REGS_MAX] = {
++static const char * const an7583_usb_phy_regs_name[AIROHA_USB_PHY_REGS_MAX] = {
 +	[AIROHA_USB_PHY_PHY] = "phy",
 +	[AIROHA_USB_PHY_ANA] = "ana",
 +	[AIROHA_USB_PHY_PMA] = "pma",
@@ -1908,12 +1893,12 @@ index 000000000000..3c948336c871
 +	[AIROHA_USB_PHY_DIG] = "dig",
 +};
 +
-+static int airoha_usb_phy_parse_subnode(struct device *dev,
-+					struct airoha_usb_phy_priv *priv,
++static int an7583_usb_phy_parse_subnode(struct device *dev,
++					struct an7583_usb_phy_priv *priv,
 +					int index, struct device_node *subnode)
 +{
-+	const struct airoha_usb_phy_match_data *data;
-+	struct airoha_usb_phy_instance  *instance;
++	const struct an7583_usb_phy_match_data *data;
++	struct an7583_usb_phy_instance  *instance;
 +	struct phy *phy;
 +	int ret;
 +
@@ -1964,11 +1949,11 @@ index 000000000000..3c948336c871
 +}
 +
 +static int airoha_pcie_phy_parse_subnode(struct device *dev,
-+					 struct airoha_usb_phy_priv *priv,
++					 struct an7583_usb_phy_priv *priv,
 +					 int index, struct device_node *subnode)
 +{
-+	const struct airoha_usb_phy_match_data *data;
-+	struct airoha_usb_phy_instance  *instance;
++	const struct an7583_usb_phy_match_data *data;
++	struct an7583_usb_phy_instance  *instance;
 +	struct phy *phy;
 +
 +	data = of_device_get_match_data(dev);
@@ -2002,11 +1987,11 @@ index 000000000000..3c948336c871
 +	return 0;
 +}
 +
-+static int airoha_usb_phy_probe(struct platform_device *pdev)
++static int an7583_usb_phy_probe(struct platform_device *pdev)
 +{
-+	const struct airoha_usb_phy_match_data *data;
++	const struct an7583_usb_phy_match_data *data;
 +	struct phy_provider *phy_provider;
-+	struct airoha_usb_phy_priv *priv;
++	struct an7583_usb_phy_priv *priv;
 +	struct device *dev = &pdev->dev;
 +	struct device_node *child_np;
 +	int i, ret;
@@ -2053,18 +2038,18 @@ index 000000000000..3c948336c871
 +		port++;
 +	}
 +
-+	phy_provider = devm_of_phy_provider_register(dev, airoha_usb_phy_xlate);
++	phy_provider = devm_of_phy_provider_register(dev, an7583_usb_phy_xlate);
 +
 +	return PTR_ERR_OR_ZERO(phy_provider);
 +}
 +
-+static const struct airoha_usb_phy_match_data an7583_usb_phy = {
++static const struct an7583_usb_phy_match_data an7583_usb_phy = {
 +	.max_instance = AIROHA_USB_PHY_MAX_INSTANCE,
-+	.regs_name = airoha_usb_phy_regs_name,
-+	.parse_subnode = airoha_usb_phy_parse_subnode,
++	.regs_name = an7583_usb_phy_regs_name,
++	.parse_subnode = an7583_usb_phy_parse_subnode,
 +};
 +
-+static const struct airoha_usb_phy_match_data an7583_pcie_phy = {
++static const struct an7583_usb_phy_match_data an7583_pcie_phy = {
 +	.max_instance = AIROHA_PCIE_PHY_MAX_INSTANCE,
 +	.regs_name = airoha_pcie_phy_regs_name,
 +	.parse_subnode = airoha_pcie_phy_parse_subnode,
@@ -2077,19 +2062,19 @@ index 000000000000..3c948336c871
 +};
 +MODULE_DEVICE_TABLE(of, airoha_phy_id_table);
 +
-+static struct platform_driver airoha_usb_driver = {
-+	.probe		= airoha_usb_phy_probe,
++static struct platform_driver an7583_usb_driver = {
++	.probe		= an7583_usb_phy_probe,
 +	.driver		= {
-+		.name	= "airoha-usb-phy",
++		.name	= "airoha-an7583-usb-phy",
 +		.of_match_table = airoha_phy_id_table,
 +	},
 +};
 +
-+module_platform_driver(airoha_usb_driver);
++module_platform_driver(an7583_usb_driver);
 +
++MODULE_DESCRIPTION("Airoha AN7583 USB PHY driver");
 +MODULE_AUTHOR("Christian Marangi <ansuelsmth@gmail.com>");
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Airoha USB PHY driver");
 -- 
 2.51.0
 

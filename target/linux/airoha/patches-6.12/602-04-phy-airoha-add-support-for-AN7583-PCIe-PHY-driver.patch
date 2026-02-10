@@ -66,13 +66,13 @@ index f8949a291486..3efb4438e8f2 100644
 +++ b/drivers/phy/airoha/Makefile
 @@ -1,2 +1,3 @@
  # SPDX-License-Identifier: GPL-2.0-only
- obj-$(CONFIG_PHY_AIROHA_EN7581_PCIE)	+= phy-airoha-en7581-pcie.o
-+obj-$(CONFIG_PHY_AIROHA_AN7583_PCIE)	+= phy-airoha-an7583-pcie.o
+ obj-$(CONFIG_PHY_AIROHA_AN7581_PCIE)	+= phy-an7581-pcie.o
++obj-$(CONFIG_PHY_AIROHA_AN7583_PCIE)	+= phy-an7583-pcie.o
 diff --git a/drivers/phy/airoha/phy-airoha-an7583-pcie-regs.h b/drivers/phy/airoha/phy-airoha-an7583-pcie-regs.h
 new file mode 100644
 index 000000000000..5a243fe4484c
 --- /dev/null
-+++ b/drivers/phy/airoha/phy-airoha-an7583-pcie-regs.h
++++ b/drivers/phy/airoha/phy-an7583-pcie-regs.h
 @@ -0,0 +1,377 @@
 +/* SPDX-License-Identifier: GPL-2.0-only */
 +/*
@@ -80,8 +80,8 @@ index 000000000000..5a243fe4484c
 + * Author: Christian Marangi <ansuelsmth@gmail.com>
 + */
 +
-+#ifndef _PHY_AIROHA_PCIE_H
-+#define _PHY_AIROHA_PCIE_H
++#ifndef _PHY_AN7583_PCIE_H
++#define _PHY_AN7583_PCIE_H
 +
 +/* G3 ANA */
 +#define REG_PXP_CMN_EN				0x0
@@ -450,12 +450,12 @@ index 000000000000..5a243fe4484c
 +#define PCIE_XTP_LN_RX_PDOWN_T2RLB_DIG_EN	BIT(8)
 +#define PCIE_XTP_LN_RX_PDOWN_L1P2_EXIT_WAIT	GENMASK(7, 0)
 +
-+#endif /* _PHY_AIROHA_PCIE_H */
++#endif /* _PHY_AN7583_PCIE_H */
 diff --git a/drivers/phy/airoha/phy-airoha-an7583-pcie.c b/drivers/phy/airoha/phy-airoha-an7583-pcie.c
 new file mode 100644
 index 000000000000..ebdab8db9262
 --- /dev/null
-+++ b/drivers/phy/airoha/phy-airoha-an7583-pcie.c
++++ b/drivers/phy/airoha/phy-an7583-pcie.c
 @@ -0,0 +1,698 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
@@ -472,7 +472,7 @@ index 000000000000..ebdab8db9262
 +#include <linux/platform_device.h>
 +#include <linux/slab.h>
 +
-+#include "phy-airoha-an7583-pcie-regs.h"
++#include "phy-an7583-pcie-regs.h"
 +
 +#define FREQ_LOCK_MAX_ATTEMPT	50
 +

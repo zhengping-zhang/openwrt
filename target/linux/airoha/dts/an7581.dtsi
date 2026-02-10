@@ -702,13 +702,10 @@
 			compatible = "airoha,an7581-usb-phy";
 			reg = <0x0 0x1fac0000 0x0 0x10000>;
 
-			airoha,scu = <&scuclk>;
 			airoha,usb2-monitor-clk-sel = <AIROHA_USB2_MONCLK_SEL1>;
-			airoha,serdes-port = <AIROHA_SCU_SERDES_USB1>;
+			airoha,usb3-serdes = <AIROHA_SCU_SERDES_USB1>;
 
 			#phy-cells = <1>;
-
-			status = "disabled";
 		};
 
 		usb1: usb@1fad0000 {
@@ -727,13 +724,10 @@
 			compatible = "airoha,an7581-usb-phy";
 			reg = <0x0 0x1fae0000 0x0 0x10000>;
 
-			airoha,scu = <&scuclk>;
 			airoha,usb2-monitor-clk-sel = <AIROHA_USB2_MONCLK_SEL2>;
-			airoha,serdes-port = <AIROHA_SCU_SERDES_USB2>;
+			airoha,usb3-serdes = <AIROHA_SCU_SERDES_USB2>;
 
 			#phy-cells = <1>;
-
-			status = "disabled";
 		};
 
 		crypto@1e004000 {
