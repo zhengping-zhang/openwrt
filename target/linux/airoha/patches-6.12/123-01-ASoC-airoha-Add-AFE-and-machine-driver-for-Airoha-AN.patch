@@ -1,4 +1,4 @@
-From eb11ddab5e39b79f6d5c11caf04419c8df157495 Mon Sep 17 00:00:00 2001
+From f9bfb8de5bbc959d842eae87dd04f0355422aca1 Mon Sep 17 00:00:00 2001
 From: Christian Marangi <ansuelsmth@gmail.com>
 Date: Thu, 31 Jul 2025 15:32:32 +0200
 Subject: [PATCH] ASoC: airoha: Add AFE and machine driver for Airoha AN7581
@@ -14,12 +14,12 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
  sound/soc/mediatek/Kconfig                    |  20 +
  sound/soc/mediatek/Makefile                   |   1 +
  sound/soc/mediatek/an7581/Makefile            |   9 +
- sound/soc/mediatek/an7581/an7581-afe-common.h |  39 ++
- sound/soc/mediatek/an7581/an7581-afe-pcm.c    | 516 ++++++++++++++++++
- sound/soc/mediatek/an7581/an7581-dai-etdm.c   | 411 ++++++++++++++
- sound/soc/mediatek/an7581/an7581-reg.h        |  89 +++
- sound/soc/mediatek/an7581/an7581-wm8960.c     | 156 ++++++
- 9 files changed, 1249 insertions(+)
+ sound/soc/mediatek/an7581/an7581-afe-common.h |  41 ++
+ sound/soc/mediatek/an7581/an7581-afe-pcm.c    | 585 ++++++++++++++++++
+ sound/soc/mediatek/an7581/an7581-dai-etdm.c   | 420 +++++++++++++
+ sound/soc/mediatek/an7581/an7581-reg.h        |  95 +++
+ sound/soc/mediatek/an7581/an7581-wm8960.c     | 156 +++++
+ 9 files changed, 1335 insertions(+)
  create mode 100644 sound/soc/mediatek/an7581/Makefile
  create mode 100644 sound/soc/mediatek/an7581/an7581-afe-common.h
  create mode 100644 sound/soc/mediatek/an7581/an7581-afe-pcm.c
@@ -105,10 +105,10 @@ index 000000000000..f48cd0269bea
 +obj-$(CONFIG_SND_SOC_AN7581_WM8960) += an7581-wm8960.o
 diff --git a/sound/soc/mediatek/an7581/an7581-afe-common.h b/sound/soc/mediatek/an7581/an7581-afe-common.h
 new file mode 100644
-index 000000000000..fef1a7b4529e
+index 000000000000..05f89caf7cf0
 --- /dev/null
 +++ b/sound/soc/mediatek/an7581/an7581-afe-common.h
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,41 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
 + * an7581-afe-common.h  --  Airoha AN7581 audio driver definitions
@@ -137,6 +137,8 @@ index 000000000000..fef1a7b4529e
 +};
 +
 +struct an7581_afe_private {
++	int pm_runtime_bypass_reg_ctl;
++
 +	/* dai */
 +	void *dai_priv[AN7581_DAI_NUM];
 +};
@@ -150,10 +152,10 @@ index 000000000000..fef1a7b4529e
 +#endif
 diff --git a/sound/soc/mediatek/an7581/an7581-afe-pcm.c b/sound/soc/mediatek/an7581/an7581-afe-pcm.c
 new file mode 100644
-index 000000000000..c387fb525d00
+index 000000000000..9854f3dd5611
 --- /dev/null
 +++ b/sound/soc/mediatek/an7581/an7581-afe-pcm.c
-@@ -0,0 +1,516 @@
+@@ -0,0 +1,585 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Airoha ALSA SoC AFE platform driver for AN7581
@@ -348,6 +350,8 @@ index 000000000000..c387fb525d00
 +		.mono_shift = -1,
 +		.hd_reg = AFE_DL1_CON0,
 +		.hd_shift = AFE_HD_SHIFT,
++		.hd_align_reg = -1,
++		.hd_align_mshift = -1,
 +		.enable_reg = AFE_DAC_CON0,
 +		.enable_shift = AFE_DL1_ENABLE_SHIFT,
 +		.msb_reg = -1,
@@ -374,6 +378,8 @@ index 000000000000..c387fb525d00
 +		.mono_shift = -1,
 +		.hd_reg = AFE_UL1_CON0,
 +		.hd_shift = AFE_HD_SHIFT,
++		.hd_align_reg = AFE_UL1_CON0,
++		.hd_align_mshift = AFE_MSB_SHIFT,
 +		.enable_reg = AFE_DAC_CON0,
 +		.enable_shift = AFE_UL1_ENABLE_SHIFT,
 +		.msb_reg = AFE_UL1_CON0,
@@ -412,12 +418,42 @@ index 000000000000..c387fb525d00
 +	},
 +};
 +
++static bool an7581_is_volatile_reg(struct device *dev, unsigned int reg)
++{
++	/*
++	 * Those auto-gen regs are read-only, so put it as volatile because
++	 * volatile registers cannot be cached, which means that they cannot
++	 * be set when power is off
++	 */
++
++	switch (reg) {
++	case AFE_DL1_CUR:
++	case AFE_UL1_CUR:
++	case AFE_IRQ_STS:
++		return true;
++	default:
++		return false;
++	};
++}
++
 +static const struct regmap_config an7581_afe_regmap_config = {
++	.name = "afe",
 +	.reg_bits = 32,
 +	.reg_stride = 4,
 +	.val_bits = 32,
++	.volatile_reg = an7581_is_volatile_reg,
 +	.max_register = AFE_MAX_REGISTER,
 +	.num_reg_defaults_raw = ((AFE_MAX_REGISTER / 4) + 1),
++	.cache_type = REGCACHE_MAPLE,
++};
++
++static const struct regmap_config an7581_afe_irq1_regmap_config = {
++	.name = "afe_irq1",
++	.reg_bits = 32,
++	.reg_stride = 4,
++	.val_bits = 32,
++	.max_register = AFE_IRQ1_MAX_REGISTER,
++	.num_reg_defaults_raw = ((AFE_IRQ1_MAX_REGISTER / 4) + 1),
 +};
 +
 +static irqreturn_t an7581_afe_irq_handler(int irq_id, void *dev)
@@ -425,7 +461,6 @@ index 000000000000..c387fb525d00
 +	struct mtk_base_afe *afe = dev;
 +	struct mtk_base_afe_irq *irq;
 +	u32 status;
-+	u32 reg;
 +	int i;
 +
 +	regmap_read(afe->regmap, AFE_IRQ_STS, &status);
@@ -469,6 +504,28 @@ index 000000000000..c387fb525d00
 +
 +static int an7581_afe_runtime_suspend(struct device *dev)
 +{
++	struct mtk_base_afe *afe = dev_get_drvdata(dev);
++	struct an7581_afe_private *afe_priv = afe->platform_priv;
++	int i;
++
++	if (!afe->regmap || afe_priv->pm_runtime_bypass_reg_ctl)
++		goto skip_regmap;
++
++	for (i = 0; i < AN7581_IRQ_NUM; i++) {
++		struct mtk_base_afe_irq *irq = &afe->irqs[i];
++
++		regmap_set_bits(irq->irq_data->regmap,
++				irq->irq_data->irq_clr_reg,
++				BIT(AFE_IRQ_MISS_FLG_CLR_SHIFT) |
++				BIT(AFE_IRQ_CLR_SHIFT));
++		regmap_clear_bits(irq->irq_data->regmap,
++				  irq->irq_data->irq_clr_reg,
++				  BIT(AFE_IRQ_MISS_FLG_CLR_SHIFT) |
++				  BIT(AFE_IRQ_CLR_SHIFT));
++	}
++
++skip_regmap:
++
 +	return 0;
 +}
 +
@@ -548,6 +605,7 @@ index 000000000000..c387fb525d00
 +	if (ret)
 +		return ret;
 +
++	afe_priv->pm_runtime_bypass_reg_ctl = true;
 +	pm_runtime_get_sync(&pdev->dev);
 +
 +	afe->regmap = devm_regmap_init_mmio(&pdev->dev, afe->base_addr,
@@ -557,9 +615,11 @@ index 000000000000..c387fb525d00
 +	if (IS_ERR(afe->regmap))
 +		return PTR_ERR(afe->regmap);
 +
++	afe_priv->pm_runtime_bypass_reg_ctl = false;
++
 +	irq_data[AN7581_IRQ_0].regmap = afe->regmap;
 +	irq_data[AN7581_IRQ_1].regmap = devm_regmap_init_mmio(&pdev->dev, base,
-+							      &an7581_afe_regmap_config);
++							      &an7581_afe_irq1_regmap_config);
 +	if (IS_ERR(irq_data[AN7581_IRQ_1].regmap))
 +		return PTR_ERR(irq_data[AN7581_IRQ_1].regmap);
 +
@@ -594,11 +654,22 @@ index 000000000000..c387fb525d00
 +
 +	for (i = 0; i < afe->memif_size; i++) {
 +		int sel_irq = an7581_memif_specified_irqs[i];
++		u32 dir_sel;
 +
 +		afe->memif[i].data = &memif_data[i];
 +		afe->memif[i].irq_usage = sel_irq;
 +		afe->memif[i].const_irq = 1;
 +		afe->irqs[sel_irq].irq_occupyed = true;
++
++		/* Assing IRQ requester to correct direction */
++		if (i == AN7581_MEMIF_DL1)
++			dir_sel = AFE_IRQ_EN_SEL_I2SOUT;
++		else
++			dir_sel = AFE_IRQ_EN_SEL_I2SIN;
++
++		regmap_update_bits(afe->irqs[sel_irq].irq_data->regmap,
++				   afe->irqs[sel_irq].irq_data->irq_en_reg,
++				   AFE_IRQ_EN_SEL, dir_sel);
 +	}
 +
 +	/* init sub_dais */
@@ -672,10 +743,10 @@ index 000000000000..c387fb525d00
 +MODULE_LICENSE("GPL");
 diff --git a/sound/soc/mediatek/an7581/an7581-dai-etdm.c b/sound/soc/mediatek/an7581/an7581-dai-etdm.c
 new file mode 100644
-index 000000000000..751aac1f7fed
+index 000000000000..582e26f01463
 --- /dev/null
 +++ b/sound/soc/mediatek/an7581/an7581-dai-etdm.c
-@@ -0,0 +1,411 @@
+@@ -0,0 +1,420 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Airoha ALSA SoC Audio DAI eTDM Control
@@ -797,12 +868,21 @@ index 000000000000..751aac1f7fed
 +static int mtk_dai_etdm_startup(struct snd_pcm_substream *substream,
 +				struct snd_soc_dai *dai)
 +{
++	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
++
++	regmap_set_bits(afe->regmap, AFE_DAC_CON0,
++			BIT(AFE_AFE_ENABLE_SHIFT));
++
 +	return 0;
 +}
 +
 +static void mtk_dai_etdm_shutdown(struct snd_pcm_substream *substream,
 +				  struct snd_soc_dai *dai)
 +{
++	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
++
++	regmap_clear_bits(afe->regmap, AFE_DAC_CON0,
++			  BIT(AFE_AFE_ENABLE_SHIFT));
 +}
 +
 +static unsigned int get_etdm_ch_fixup(unsigned int channels)
@@ -1089,10 +1169,10 @@ index 000000000000..751aac1f7fed
 +}
 diff --git a/sound/soc/mediatek/an7581/an7581-reg.h b/sound/soc/mediatek/an7581/an7581-reg.h
 new file mode 100644
-index 000000000000..73c1a9373733
+index 000000000000..e7a1a939681c
 --- /dev/null
 +++ b/sound/soc/mediatek/an7581/an7581-reg.h
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,95 @@
 +/* SPDX-License-Identifier: GPL-2.0 */
 +/*
 + * an7581-reg.h  --  Airoha AN7581 audio driver reg definition
@@ -1104,6 +1184,7 @@ index 000000000000..73c1a9373733
 +#define AFE_DAC_CON0			0x0
 +#define   AFE_DL1_ENABLE_SHIFT		17
 +#define   AFE_UL1_ENABLE_SHIFT		1
++#define   AFE_AFE_ENABLE_SHIFT		0
 +
 +#define ETDM_COWORK_CON0		0x4c
 +#define   EDTM_IN1_SLAVE_SEL		GENMASK(27, 24)
@@ -1165,6 +1246,9 @@ index 000000000000..73c1a9373733
 +#define   AFE_MSB_SHIFT			6
 +
 +#define AFE_IRQ_CON0			0xe4
++#define   AFE_IRQ_EN_SEL        	BIT(4)
++#define   AFE_IRQ_EN_SEL_I2SIN        	FIELD_PREP_CONST(AFE_IRQ_EN_SEL, 0x0)
++#define   AFE_IRQ_EN_SEL_I2SOUT        	FIELD_PREP_CONST(AFE_IRQ_EN_SEL, 0x1)
 +#define   AFE_IRQ_MISS_FLG_CLR_SHIFT	3
 +#define   AFE_IRQ_CLR_SHIFT		2
 +#define   AFE_IRQ_ON_SHIFT		0
@@ -1176,10 +1260,12 @@ index 000000000000..73c1a9373733
 +#define  AFE_IRQ_STS_PLAY		BIT(1)
 +#define  AFE_IRQ_STS_RECORD		BIT(0)
 +
++#define AFE_MAX_REGISTER		AFE_IRQ_STS
++
 +#define AFE_IRQ1_CON0			0x0
 +#define AFE_IRQ1_CNT			0x4
 +
-+#define AFE_MAX_REGISTER		AFE_IRQ1_CON0
++#define AFE_IRQ1_MAX_REGISTER		AFE_IRQ1_CNT
 +
 +#endif
 diff --git a/sound/soc/mediatek/an7581/an7581-wm8960.c b/sound/soc/mediatek/an7581/an7581-wm8960.c
@@ -1240,7 +1326,7 @@ index 000000000000..f0e77e3528d4
 +		.no_pcm = 1,
 +		.dai_fmt = SND_SOC_DAIFMT_I2S |
 +			SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_CBC_CFC |
++			SND_SOC_DAIFMT_CBP_CFP |
 +			SND_SOC_DAIFMT_GATED,
 +		SND_SOC_DAILINK_REG(codec),
 +	},

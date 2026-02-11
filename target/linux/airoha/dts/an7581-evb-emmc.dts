@@ -34,12 +34,16 @@
 			"Headphone", "HP_R",
 			"LINPUT1", "AMIC",
 			"RINPUT1", "AMIC";
-
+	dai-format = "i2s";
 	status = "okay";
 
 	codec {
 		sound-dai = <&wm8960>;
 	};
+};
+
+&afe {
+	status = "okay";
 };
 
 &en7581_pinctrl {
